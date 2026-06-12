@@ -1,5 +1,4 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { GoogleGenAI, Type, FunctionDeclaration } from "@google/genai";
 import { MaterialItem } from '../types';
 
 interface ChatAssistantProps {
@@ -15,6 +14,8 @@ interface Message {
   item?: MaterialItem;
 }
 
+const XAI_API_URL = 'https://api.x.ai/v1/chat/completions';
+
 export const ChatAssistant: React.FC<ChatAssistantProps> = ({ inventory, onAddToCart, onClose }) => {
   const [messages, setMessages] = useState<Message[]>([
     { id: '1', role: 'model', text: 'Hi! I can help you find materials or add them to your cart. What are you looking for?' }
@@ -22,160 +23,127 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ inventory, onAddTo
   const [inputText, setInputText] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const chatSessionRef = useRef<any>(null);
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   };
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  // Initialize Chat Session
-  useEffect(() => {
-    const initChat = async () => {
-      try {
-        const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-        
-        // Simplified inventory for the AI context to save tokens
-        const inventoryContext = inventory.map(item => ({
-          id: item.id,
-          name: item.name,
-          category: item.category,
-          condition: item.condition,
-          price: item.estimatedValue,
-          quantity: item.quantity,
-          location: item.location
-        }));
+  const inventoryContext = inventory.map(item => ({
+    id: item.id,
+    name: item.name,
+    category: item.category,
+    condition: item.condition,
+    price: item.estimatedValue,
+    quantity: item.quantity,
+    location: item.location
+  }));
 
-        const addToCartTool: FunctionDeclaration = {
-          name: "addToCart",
-          description: "Add an item to the user's shopping cart. Use this when the user explicitly confirms they want to buy or add an item.",
-          parameters: {
-            type: Type.OBJECT,
-            properties: {
-              itemId: {
-                type: Type.STRING,
-                description: "The ID of the material item to add."
-              }
-            },
-            required: ["itemId"]
-          }
-        };
-
-        const showItemTool: FunctionDeclaration = {
-            name: "showItem",
-            description: "Show the image and details of a specific material item to the user. Use this when you find items relevant to the user's search.",
-            parameters: {
-              type: Type.OBJECT,
-              properties: {
-                itemId: {
-                  type: Type.STRING,
-                  description: "The ID of the material item to show."
-                }
-              },
-              required: ["itemId"]
-            }
-          };
-
-        chatSessionRef.current = ai.chats.create({
-          model: "gemini-2.5-flash",
-          config: {
-            systemInstruction: `You are BauBay's helpful marketplace assistant. 
-            You have access to the current site inventory: ${JSON.stringify(inventoryContext)}.
-            Answer questions about availability, price, and condition.
-            If the user asks for items (e.g., "Do you have bricks?"), search your context and use the 'showItem' tool to display the best matches.
-            If a user wants to buy something, use the 'addToCart' tool.
-            Keep responses concise and friendly.`,
-            tools: [{ functionDeclarations: [addToCartTool, showItemTool] }],
-          }
-        });
-      } catch (error) {
-        console.error("Failed to init chat", error);
-      }
-    };
-
-    initChat();
-  }, [inventory]);
+  const systemPrompt = `You are BauBay's helpful marketplace assistant.
+You have access to the current site inventory: ${JSON.stringify(inventoryContext)}.
+Answer questions about availability, price, and condition.
+If the user asks for items (e.g., "Do you have bricks?"), search your context and reply with the item id formatted as [ADD_ITEM:id] to show it, or [CART_ITEM:id] to add it to cart.
+Keep responses concise and friendly.`;
 
   const handleSend = async () => {
-    if (!inputText.trim() || !chatSessionRef.current) return;
+    if (!inputText.trim()) return;
 
     const userMsg: Message = { id: Date.now().toString(), role: 'user', text: inputText };
     setMessages(prev => [...prev, userMsg]);
     setInputText('');
     setIsLoading(true);
 
+    const apiKey = import.meta.env.VITE_XAI_API_KEY;
+
+    if (!apiKey) {
+      // Mock response when no key
+      await new Promise(resolve => setTimeout(resolve, 800));
+      const lower = inputText.toLowerCase();
+      const matched = inventory.find(i =>
+        i.name.toLowerCase().includes(lower) ||
+        i.category.toLowerCase().includes(lower)
+      );
+      const reply = matched
+        ? `I found ${matched.name} in ${matched.location} for €${matched.estimatedValue}. Want to add it to your cart?`
+        : "I couldn't find an exact match. Try searching by material type like 'brick', 'wood', or 'metal'.";
+      setMessages(prev => [
+        ...prev,
+        ...(matched ? [{ id: Date.now().toString() + 'show', role: 'model' as const, text: `Here's what I found:`, item: matched }] : []),
+        { id: Date.now().toString() + 'ai', role: 'model' as const, text: reply }
+      ]);
+      setIsLoading(false);
+      return;
+    }
+
+    const history = messages
+      .filter(m => m.role !== 'system')
+      .map(m => ({
+        role: m.role === 'model' ? 'assistant' : 'user',
+        content: m.text
+      }));
+
     try {
-      let response = await chatSessionRef.current.sendMessage({ message: userMsg.text });
-      
-      // Handle Function Calls (Tool Use)
-      const functionCalls = response.functionCalls;
-      
-      if (functionCalls && functionCalls.length > 0) {
-        const functionResponses = [];
-        
-        for (const call of functionCalls) {
-          if (call.name === "addToCart") {
-             const args = call.args as any;
-             const item = inventory.find(i => i.id === args.itemId);
-             
-             let result = "Item not found";
-             if (item) {
-               onAddToCart(item);
-               result = "Item added to cart successfully";
-               // Add a system message to UI
-               setMessages(prev => [...prev, { 
-                 id: Date.now().toString() + 'sys', 
-                 role: 'system', 
-                 text: `Added ${item.name} to cart`,
-                 item: item 
-               }]);
-             }
+      const response = await fetch(XAI_API_URL, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${apiKey}`
+        },
+        body: JSON.stringify({
+          model: import.meta.env.VITE_XAI_MODEL || 'grok-2-1212',
+          messages: [
+            { role: 'system', content: systemPrompt },
+            ...history,
+            { role: 'user', content: inputText }
+          ],
+          temperature: 0.7,
+          max_tokens: 512
+        })
+      });
 
-             functionResponses.push({
-               name: call.name,
-               response: { result: result },
-               id: call.id 
-             });
-          } else if (call.name === "showItem") {
-            const args = call.args as any;
-            const item = inventory.find(i => i.id === args.itemId);
-            let result = "Item not found";
-            
-            if (item) {
-                // We don't necessarily need a text response from the model if it's just showing an item,
-                // but usually the model wraps it in text.
-                // We'll insert a "model" message that contains the item for rendering.
-                setMessages(prev => [...prev, {
-                    id: Date.now().toString() + 'show',
-                    role: 'model',
-                    text: `I found this ${item.name} in ${item.location}:`,
-                    item: item
-                }]);
-                result = "Item displayed to user";
-            }
-            
-            functionResponses.push({
-                name: call.name,
-                response: { result: result },
-                id: call.id
-            });
-          }
+      if (!response.ok) throw new Error(`xAI error: ${response.status}`);
+      const data = await response.json();
+      const text: string = data.choices?.[0]?.message?.content ?? '';
+
+      // Parse [ADD_ITEM:id] and [CART_ITEM:id] tokens
+      const showMatch = text.match(/\[ADD_ITEM:([^\]]+)\]/);
+      const cartMatch = text.match(/\[CART_ITEM:([^\]]+)\]/);
+
+      const cleanText = text.replace(/\[(ADD_ITEM|CART_ITEM):[^\]]+\]/g, '').trim();
+
+      if (showMatch) {
+        const item = inventory.find(i => i.id === showMatch[1]);
+        if (item) {
+          setMessages(prev => [...prev, {
+            id: Date.now().toString() + 'show',
+            role: 'model',
+            text: `Here's ${item.name}:`,
+            item
+          }]);
         }
-        
-        // Send tool execution result back to model to get final text response (if any)
-        response = await chatSessionRef.current.sendMessage(functionResponses);
       }
 
-      const modelText = response.text;
-      if (modelText) {
-          setMessages(prev => [...prev, { id: Date.now().toString() + 'ai', role: 'model', text: modelText }]);
+      if (cartMatch) {
+        const item = inventory.find(i => i.id === cartMatch[1]);
+        if (item) {
+          onAddToCart(item);
+          setMessages(prev => [...prev, {
+            id: Date.now().toString() + 'sys',
+            role: 'system',
+            text: `Added ${item.name} to cart`,
+            item
+          }]);
+        }
       }
 
+      if (cleanText) {
+        setMessages(prev => [...prev, { id: Date.now().toString() + 'ai', role: 'model', text: cleanText }]);
+      }
     } catch (error) {
-      console.error("Chat Error", error);
+      console.error('Chat Error', error);
       setMessages(prev => [...prev, { id: Date.now().toString(), role: 'model', text: "Sorry, I'm having trouble connecting right now." }]);
     } finally {
       setIsLoading(false);
@@ -218,19 +186,18 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ inventory, onAddTo
                </div>
             );
           }
-          
+
           const isUser = msg.role === 'user';
           return (
             <div key={msg.id} className={`flex flex-col ${isUser ? 'items-end' : 'items-start'}`}>
               <div className={`max-w-[85%] p-3 rounded-2xl text-sm leading-relaxed shadow-sm ${
-                isUser 
-                  ? 'bg-orange-600 text-white rounded-tr-none' 
+                isUser
+                  ? 'bg-orange-600 text-white rounded-tr-none'
                   : 'bg-white text-gray-800 border border-gray-100 rounded-tl-none'
               }`}>
                 {msg.text}
               </div>
-              
-              {/* Item Card Rendering */}
+
               {!isUser && msg.item && (
                   <div className="mt-2 ml-1 max-w-[220px] bg-white rounded-xl overflow-hidden border border-gray-200 shadow-md">
                       <div className="h-28 w-full bg-gray-100">
@@ -242,7 +209,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ inventory, onAddTo
                                 <span className="text-orange-600 font-bold text-xs">€{msg.item.estimatedValue}</span>
                                 <span className="text-gray-400 text-[10px]">{msg.item.condition}</span>
                           </div>
-                          <button 
+                          <button
                              onClick={() => onAddToCart(msg.item!)}
                              className="w-full bg-gray-900 text-white text-xs font-bold py-2 rounded-lg hover:bg-gray-800 transition-colors"
                           >
@@ -277,7 +244,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ inventory, onAddTo
             placeholder="Ask about materials..."
             className="flex-1 bg-gray-100 border-0 rounded-xl px-4 py-3 text-gray-900 focus:ring-2 focus:ring-orange-500 outline-none"
           />
-          <button 
+          <button
             onClick={handleSend}
             disabled={!inputText.trim() || isLoading}
             className="bg-gray-900 hover:bg-gray-800 disabled:bg-gray-300 text-white p-3 rounded-xl transition-colors"

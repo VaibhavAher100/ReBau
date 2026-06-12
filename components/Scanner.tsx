@@ -1,6 +1,6 @@
 
 import React, { useState, useRef, useEffect } from 'react';
-import { analyzeMaterialImage } from '../services/geminiService';
+import { analyzeMaterialImage } from '../services/grokService';
 import { AnalysisResult, MaterialCategory, Condition } from '../types';
 
 interface ScannerProps {
