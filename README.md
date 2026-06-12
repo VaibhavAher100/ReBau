@@ -1,236 +1,61 @@
 <div align="center">
-<img src="./logo/baubay_logo.png" alt="BauBay Logo" width="300"/>
+<img src="./public/logo.jpeg" alt="ReBau logo" width="380"/>
 
-# BauBay
+**AI marketplace for reclaimed construction materials**
 
-**AI-Powered Construction Material Recovery & Marketplace Platform**
+Scan it. Price it. Sell it. Half the cost, a fraction of the carbon.
 
-<img src="./logo/Website ss.jpg" alt="BauBay Platform Screenshot" width="100%"/>
-
-</div>
-
-BauBay is an intelligent construction material management system that helps site managers identify, value, and trade surplus materials. By leveraging AI-powered material recognition and real-time marketplace features, BauBay promotes circular economy practices in the construction industry while reducing waste and maximizing resource recovery value.
-
-<div align="center">
-
-[![CI/CD Pipeline](https://img.shields.io/github/actions/workflow/status/HaarisIqubal/BauBay/ci.yml?branch=main&label=CI%2FCD&logo=github)](https://github.com/HaarisIqubal/BauBay/actions)
-[![Build Status](https://img.shields.io/badge/build-passing-brightgreen?style=flat&logo=github)](https://github.com/HaarisIqubal/BauBay)
-[![License](https://img.shields.io/badge/license-MIT-blue.svg?style=flat)](LICENSE)
-[![Version](https://img.shields.io/badge/version-1.0.0-orange.svg?style=flat)](https://github.com/HaarisIqubal/BauBay/releases)
-
-[![Powered by Google Gemini](https://img.shields.io/badge/Powered%20by-Google%20Gemini-4285F4?style=flat&logo=google)](https://ai.google.dev/)
-[![PyTorch](https://img.shields.io/badge/PyTorch-ML%20Model-EE4C2C?style=flat&logo=pytorch)](https://pytorch.org/)
-[![ONEWare Studio](https://img.shields.io/badge/Trained%20on-ONEWare%20Studio-00ADD8?style=flat)](https://oneware.ai/)
-[![Built with React](https://img.shields.io/badge/Built%20with-React%2019-61DAFB?style=flat&logo=react)](https://react.dev/)
-[![TypeScript](https://img.shields.io/badge/TypeScript-5.8-3178C6?style=flat&logo=typescript)](https://www.typescriptlang.org/)
-[![Vite](https://img.shields.io/badge/Vite-5.4-646CFF?style=flat&logo=vite)](https://vitejs.dev/)
-
-[![Node.js](https://img.shields.io/badge/Node.js-18%2B-339933?style=flat&logo=node.js)](https://nodejs.org/)
-[![Code Quality](https://img.shields.io/badge/code%20quality-A+-success?style=flat)](https://github.com/HaarisIqubal/BauBay)
-[![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](./docs/contributing.md)
-[![Maintenance](https://img.shields.io/badge/Maintained-yes-green.svg?style=flat)](https://github.com/HaarisIqubal/BauBay)
+Built by Team Toronto at the AI Hackathon 2026 (Sustainability & Energy track)<br/>
+Powered by AI Innovation at FAU Erlangen-Nürnberg
 
 </div>
 
----
+## What it does
 
-## 🌟 Key Features
+ReBau connects construction sites that have surplus or salvaged material with projects that need it.
 
-### 📸 **AI Material Scanner**
-- Batch scan construction materials using your camera
-- **PyTorch-powered object detection** for precise material identification
-- Automatic identification and categorization (Wood, Metal, Concrete, Brick, Electrical, Glass)
-- AI-powered condition assessment and reusability scoring
-- Instant market value estimation
-- Geolocation tagging for materials
-- **Custom ML model trained on ONEWare Studio AI Platform**
+- A site manager photographs a pile of leftover material on their phone. A vision LLM identifies what's in it, grades the condition (A/B/C), estimates the quantity, and prices it at roughly half the new price. One tap publishes it to the marketplace.
+- Buyers browse the marketplace, or upload a building plan / bill of materials. The tool extracts the required materials, matches them against available used inventory, and shows per line what they save in euros and in kg CO2 compared to buying new.
+- Sellers earn resale revenue and avoid disposal costs (EUR 30-80/t). Buyers cut material costs and get auditable scope 3 carbon numbers for ESG reporting. ReBau takes a commission per transaction.
 
-### 📦 **Inventory Management**
-- Track all recovered materials in one dashboard
-- Internal project matching to identify reuse opportunities within your organization
-- Real-time sustainability metrics (CO₂ avoided, waste diverted, trees saved)
-- Filter materials by category, value, and condition
-- Publish materials to marketplace or keep internal
+## How it works
 
-### 🛒 **Material Marketplace**
-- Browse available materials from other construction sites in your region
-- Distance-based search (example: Nuremberg region)
-- Add items to cart and request materials
-- View pickup times, access requirements, and location details
-- Track material requests and approval status
+The whole thing is a single-page web app: React 19, TypeScript, Vite, Tailwind CSS. There is no backend in the MVP. AI calls go straight from the browser to the xAI API, and state lives in localStorage. One responsive codebase covers both roles: the phone viewport works as the seller's scanning app, the desktop viewport as the buyer's marketplace.
 
-### 💬 **AI Chat Assistant**
-- Natural language material search
-- Intelligent recommendations based on project needs
-- Quick add-to-cart functionality
-- Context-aware suggestions
+| Piece | What it does |
+|---|---|
+| `services/grokService.ts` | Talks to Grok's vision model via the OpenAI-compatible endpoint. `analyzeMaterialImage` turns a photo into a JSON array of detected materials with condition, reusability score, quantity, value, and bounding boxes. `analyzeBlueprint` turns a blueprint image or pasted BOM into a structured list of required materials. Both fall back to realistic mock data when no API key is set. |
+| `services/sustainability.ts` | Pricing and carbon math. Condition grades map to discounts (New/Good 50% of new price, Fair 35%, Poor 20%, Scrap 10%). CO2 savings use published embodied-carbon factors per category in kg CO2e/kg (steel 1.9, brick 0.24, concrete 0.13; timber stores carbon) plus a weight heuristic parsed from each item's quantity string. |
+| `components/Scanner.tsx` | Camera flow: capture, analyze, bounding-box overlays, inline editing, save to inventory. |
+| `components/BlueprintMatch.tsx` | Matches extracted requirements against published listings by name or category and renders a proposal table with used price, estimated new price, euros saved, and kg CO2 saved per line. |
+| `App.tsx` | Global state, four tabs (Scan, Inventory, Marketplace, Blueprint Match), localStorage persistence, running savings widget. |
 
-### 📊 **Sustainability Dashboard**
-- Track environmental impact with animated metrics
-- Monthly CO₂ savings visualization
-- Value recovery analytics
-- Real-time impact reporting
+## Getting started
 
-### 🔔 **Smart Notifications**
-- Customizable alerts for new materials
-- Category-based preferences (Wood, Metal, High Value items, etc.)
-- Real-time marketplace updates
-
----
-
-## 🚀 Quick Start
-
-### Prerequisites
-
-- **Node.js** (v18 or higher)
-- **Gemini API Key** from [Google AI Studio](https://ai.google.dev/)
-
-### Installation
-
-1. **Clone the repository**
-   ```bash
-   git clone https://github.com/HaarisIqubal/BauBay.git
-   cd BauBay
-   ```
-
-2. **Install dependencies**
-   ```bash
-   npm install
-   ```
-
-3. **Configure environment**
-   
-   Create a `.env.local` file in the root directory:
-   ```env
-   VITE_GEMINI_API_KEY=your_gemini_api_key_here
-   ```
-
-4. **Run the development server**
-   ```bash
-   npm run dev
-   ```
-
-5. **Open your browser**
-   
-   Navigate to `http://localhost:5173` to see the app in action!
-
----
-
-## 🏗️ Tech Stack
-
-- **Frontend Framework:** React 19 with TypeScript
-- **Build Tool:** Vite
-- **AI Integration:** 
-  - Google Gemini API (@google/genai) for natural language processing
-  - **PyTorch ML Model** for object detection and material recognition
-- **ML Training Platform:** **ONEWare Studio AI Platform**
-- **Styling:** TailwindCSS (custom utility classes)
-- **State Management:** React Hooks
-- **Geolocation:** Browser Geolocation API
-- **Image Processing:** File API with Camera integration
-- **Object Detection:** Custom PyTorch model for construction materials
-
----
-
-## 📁 Project Structure
-
-```
-baubay_2/
-├── components/
-│   ├── CartDrawer.tsx          # Shopping cart interface
-│   ├── ChatAssistant.tsx       # AI-powered chat
-│   ├── InventoryCard.tsx       # Material card component
-│   ├── ItemDetails.tsx         # Material detail view
-│   ├── NavBar.tsx              # Bottom navigation
-│   ├── ProfileModal.tsx        # User profile & requests
-│   └── Scanner.tsx             # Camera scanning interface
-├── services/
-│   └── geminiService.ts        # Gemini AI integration
-├── App.tsx                     # Main application component
-├── types.ts                    # TypeScript type definitions
-├── index.tsx                   # Application entry point
-├── vite.config.ts              # Vite configuration
-└── package.json                # Dependencies & scripts
+```bash
+npm install
+npm run dev        # http://localhost:3000
 ```
 
----
+Real AI calls need an xAI key in `.env`:
 
-## 🎯 Use Cases
+```
+VITE_XAI_API_KEY=your-key-here
+VITE_XAI_MODEL=grok-2-vision-1212
+```
 
-1. **Construction Site Managers**: Track surplus materials and find reuse opportunities
-2. **Sustainability Officers**: Monitor environmental impact and circular economy metrics
-3. **Procurement Teams**: Source cost-effective reclaimed materials from nearby sites
-4. **Project Coordinators**: Match materials across multiple company projects
+Without a key the app runs in mock mode: all flows work with canned AI responses, so you can try it immediately.
 
----
+## Team Toronto
 
-## 🌍 Environmental Impact
+| Member | Contribution |
+|---|---|
+| _to be added_ | |
 
-BauBay helps construction teams:
-- **Reduce Landfill Waste** by facilitating material reuse
-- **Lower Carbon Footprint** through avoided material production
-- **Promote Circular Economy** in construction industry
-- **Track Sustainability Metrics** for ESG reporting
+## Credits
 
----
+Built on top of [BauBay](https://github.com/HaarisIqubal/BauBay). Material photos via Unsplash. FAU logo via Wikimedia Commons.
 
-## 🛠️ Available Scripts
+## License
 
-- `npm run dev` - Start development server
-- `npm run build` - Build for production
-- `npm run preview` - Preview production build locally
-
----
-
-## 📖 Documentation
-
-Comprehensive documentation is available in the `/docs` folder:
-
-**[📚 Documentation Index](./docs/README.md)**
-
-### Quick Links
-
-**Getting Started:**
-- [Installation Guide](./docs/installation.md) - Setup and configuration
-- [Architecture Overview](./docs/architecture.md) - System design and structure
-- [Components](./docs/components.md) - Detailed component docs
-- [Types Reference](./docs/types.md) - TypeScript definitions
-
-**Development:**
-- [Code Examples](./docs/reference/code-examples.md) - Common patterns and snippets
-- [Troubleshooting](./docs/reference/troubleshooting.md) - Solutions to common issues
-
-**Features:**
-- [Material Scanner](./docs/features/scanner.md) - AI-powered detection (coming soon)
-- [PyTorch Object Detection](./docs/features/pytorch-model.md) - ML model documentation
-- [Inventory Management](./docs/features/inventory.md) - Material tracking (coming soon)
-- [Marketplace](./docs/features/marketplace.md) - Material exchange (coming soon)
-- [Chat Assistant](./docs/features/chat.md) - AI interface (coming soon)
-
----
-
-## 🔗 Links
-
-- **Live Demo:** [AI Studio App](https://ai.studio/apps/drive/1jjZGmtihvBCLizVR1NtmE7x7_2CGbwkQ)
-- **Repository:** [github.com/HaarisIqubal/BauBay](https://github.com/HaarisIqubal/BauBay)
-- **Google Gemini:** [ai.google.dev](https://ai.google.dev/)
-
----
-
-## 📄 License
-
-This project is built as part of the Google Gemini AI Studio demonstration.
-
----
-
-## 🙏 Acknowledgments
-
-- Powered by **Google Gemini AI** for intelligent natural language processing
-- **PyTorch** for deep learning-based object detection
-- **ONEWare Studio AI Platform** for ML model training and optimization
-- Built with **React** and **Vite** for modern web development
-- Inspired by circular economy principles in construction
-
----
-
-**Built with ❤️ for sustainable construction practices**
+[MIT](./LICENSE)
