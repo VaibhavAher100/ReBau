@@ -1,0 +1,8 @@
+{
+  "name": "BauBay",
+  "description": "AI-powered construction material recovery and inventory management system for site managers.",
+  "requestFramePermissions": [
+    "camera",
+    "geolocation"
+  ]
+}
