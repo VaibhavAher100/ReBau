@@ -50,7 +50,11 @@ Without a key the app runs in mock mode: all flows work with canned AI responses
 
 | Member | Contribution |
 |---|---|
-| _to be added_ | |
+| [Vaibhav Aher](https://github.com/VaibhavAher100) | |
+| [Haaris Iqubal](https://github.com/HaarisIqubal) | |
+| [Raj Hemant Panchal](https://github.com/panchal-raj) | |
+| [Baschtl14](https://github.com/Baschtl14) | |
+| [shaheer-exe](https://github.com/shaheer-exe) | |
 
 ## Credits
 
