@@ -1,5 +1,5 @@
 {
-  "name": "BauBay",
+  "name": "ReBau",
   "description": "AI-powered construction material recovery and inventory management system for site managers.",
   "requestFramePermissions": [
     "camera",

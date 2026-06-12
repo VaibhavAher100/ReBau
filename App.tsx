@@ -20,7 +20,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.WOOD,
     condition: Condition.GOOD,
     reusabilityScore: 85,
-    imageUrl: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/materials/pine-beams.jpg',
     quantity: '12 Units (4m)',
     estimatedValue: 450,
     location: 'Altstadt, Nürnberg',
@@ -39,7 +39,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.METAL,
     condition: Condition.FAIR,
     reusabilityScore: 70,
-    imageUrl: 'https://images.unsplash.com/photo-1515524738708-327f6b0037a7?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/materials/steel-pipes.jpg',
     quantity: '25 Meters',
     estimatedValue: 120,
     location: 'Gostenhof, Nürnberg',
@@ -57,7 +57,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.BRICK,
     condition: Condition.NEW,
     reusabilityScore: 100,
-    imageUrl: 'https://images.unsplash.com/photo-1590076215667-875d4ef2d7ee?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/materials/red-bricks.jpg',
     quantity: '500 Bricks',
     estimatedValue: 380,
     location: 'Südstadt, Nürnberg',
@@ -76,7 +76,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.ELECTRICAL,
     condition: Condition.SCRAP,
     reusabilityScore: 20,
-    imageUrl: 'https://images.unsplash.com/photo-1617706677523-159fa3492192?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/materials/copper-wire.jpg',
     quantity: '15 kg',
     estimatedValue: 95,
     location: 'Maxfeld, Nürnberg',
@@ -93,7 +93,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.OTHER,
     condition: Condition.NEW,
     reusabilityScore: 100,
-    imageUrl: 'https://images.unsplash.com/photo-1533750088811-7a8b16218a58?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/materials/rockwool-insulation.jpg',
     quantity: '3 Rolls',
     estimatedValue: 150,
     location: 'St. Johannis, Nürnberg',
@@ -111,7 +111,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.CONCRETE,
     condition: Condition.NEW,
     reusabilityScore: 100,
-    imageUrl: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/materials/portland-cement.jpg',
     quantity: '40 Bags (25kg)',
     estimatedValue: 280,
     location: 'Langwasser, Nürnberg',
@@ -130,7 +130,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.WOOD,
     condition: Condition.GOOD,
     reusabilityScore: 90,
-    imageUrl: 'https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/materials/oak-flooring.jpg',
     quantity: '85 sqm',
     estimatedValue: 1200,
     location: 'Erlenstegen, Nürnberg',
@@ -150,7 +150,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.GLASS,
     condition: Condition.GOOD,
     reusabilityScore: 85,
-    imageUrl: 'https://images.unsplash.com/photo-1534351590666-13e3e96b5017?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/materials/glass-panels.jpg',
     quantity: '10 Panels',
     estimatedValue: 500,
     location: 'Mögeldorf, Nürnberg',
@@ -169,7 +169,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.METAL,
     condition: Condition.FAIR,
     reusabilityScore: 80,
-    imageUrl: 'https://images.unsplash.com/photo-1587582534579-22a4505f9df2?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/materials/scaffold-tubes.jpg',
     quantity: '50 Units',
     estimatedValue: 600,
     location: 'Wöhrd, Nürnberg',
@@ -187,7 +187,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.CONCRETE,
     condition: Condition.GOOD,
     reusabilityScore: 95,
-    imageUrl: 'https://images.unsplash.com/photo-1515463138280-67d1dcbf317f?auto=format&fit=crop&w=800&q=80',
+    imageUrl: '/materials/cobblestones.jpg',
     quantity: '2 Tons',
     estimatedValue: 300,
     location: 'Dutzendteich, Nürnberg',
@@ -209,7 +209,7 @@ const MOCK_INITIAL_REQUEST: MaterialRequest = {
   totalValue: 570
 };
 
-const LS_KEY = 'hackmate_state_v1';
+const LS_KEY = 'hackmate_state_v2';
 
 interface PersistedState {
   inventory: MaterialItem[];
@@ -473,11 +473,11 @@ const App: React.FC = () => {
   const generateMockItem = (): MaterialItem => {
       const locations = ['Langwasser', 'Nordstadt', 'Mitte', 'Gostenhof', 'Ziegelstein', 'Fürth'];
       const itemTemplates = [
-          { name: 'Used Scaffold Planks', cat: MaterialCategory.WOOD, img: 'https://images.unsplash.com/photo-1594235048794-fae1f32a87d5?auto=format&fit=crop&w=800&q=80', val: 120 },
-          { name: 'Surplus Floor Tiles', cat: MaterialCategory.CONCRETE, img: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80', val: 200 },
-          { name: 'Copper Wiring Scraps', cat: MaterialCategory.ELECTRICAL, img: 'https://images.unsplash.com/photo-1617706677523-159fa3492192?auto=format&fit=crop&w=800&q=80', val: 350 },
-          { name: 'Steel Reinforcement Mesh', cat: MaterialCategory.METAL, img: 'https://images.unsplash.com/photo-1587582534579-22a4505f9df2?auto=format&fit=crop&w=800&q=80', val: 400 },
-          { name: 'Plywood Sheets', cat: MaterialCategory.WOOD, img: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&w=800&q=80', val: 80 }
+          { name: 'Used Scaffold Planks', cat: MaterialCategory.WOOD, img: '/materials/scaffold-planks.jpg', val: 120 },
+          { name: 'Surplus Floor Tiles', cat: MaterialCategory.CONCRETE, img: '/materials/floor-tiles.jpg', val: 200 },
+          { name: 'Copper Wiring Scraps', cat: MaterialCategory.ELECTRICAL, img: '/materials/copper-wire.jpg', val: 350 },
+          { name: 'Steel Reinforcement Mesh', cat: MaterialCategory.METAL, img: '/materials/steel-pipes.jpg', val: 400 },
+          { name: 'Plywood Sheets', cat: MaterialCategory.WOOD, img: '/materials/scaffold-planks.jpg', val: 80 }
       ];
 
       const template = itemTemplates[Math.floor(Math.random() * itemTemplates.length)];
@@ -658,28 +658,18 @@ const App: React.FC = () => {
       {/* Top Header */}
       <div className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-sm transition-all duration-300">
         <div className="bg-stone-900 text-stone-300 text-[10px] font-medium py-1.5 px-4 text-center tracking-wide">
-          BauBay Demo • <span className="text-orange-400">Nürnberg Region</span>
+          ReBau Demo • <span className="text-orange-400">Nürnberg Region</span>
         </div>
 
         <div className="px-6 py-4 flex justify-between items-center max-w-7xl mx-auto w-full">
             <div className="flex items-center gap-4">
-              <svg width="140" height="45" viewBox="0 0 140 45" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
-                <defs>
-                    <pattern id="brick-pattern" x="0" y="0" width="10" height="6" patternUnits="userSpaceOnUse">
-                        <rect width="10" height="6" fill="#fdba74"/>
-                        <rect x="0.5" y="0.5" width="9" height="2" rx="0.5" fill="#c2410c"/>
-                        <rect x="0.5" y="3" width="4" height="2" rx="0.5" fill="#9a3412"/>
-                        <rect x="5" y="3" width="4.5" height="2" rx="0.5" fill="#c2410c"/>
-                    </pattern>
-                </defs>
-                <text x="2" y="36" fontFamily="'Inter', sans-serif" fontWeight="900" fontSize="44" fill="url(#brick-pattern)" stroke="#7c2d12" strokeWidth="1.5">B</text>
-                <text x="38" y="34" fontFamily="'Inter', sans-serif" fontWeight="700" fontSize="28" fill="#1c1917" letterSpacing="-0.5">auBay</text>
-              </svg>
+              <img src="/logo.jpeg" alt="ReBau" className="h-12 w-auto object-contain drop-shadow-sm" />
 
-              <div className="hidden md:flex flex-col border-l-2 border-stone-200 pl-4 h-8 justify-center">
-                  <span className="text-[9px] text-stone-400 uppercase font-black tracking-widest leading-none mb-0.5">Powered by</span>
-                  <div className="flex items-center gap-1">
-                      <span className="text-xs font-bold text-stone-800 tracking-wide">ONEWare</span>
+              <div className="hidden md:flex flex-col border-l-2 border-stone-200 pl-4 h-10 justify-center">
+                  <span className="text-[9px] text-stone-400 uppercase font-black tracking-widest leading-none mb-1">Powered by</span>
+                  <div className="flex items-center gap-1.5">
+                      <img src="/fau-logo.svg" alt="FAU Erlangen-Nürnberg" className="h-4 w-auto object-contain" />
+                      <span className="text-[10px] font-semibold text-stone-600 leading-tight">AI Innovation at FAU Erlangen-Nürnberg</span>
                   </div>
               </div>
             </div>

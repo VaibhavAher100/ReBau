@@ -42,7 +42,7 @@ export const ChatAssistant: React.FC<ChatAssistantProps> = ({ inventory, onAddTo
     location: item.location
   }));
 
-  const systemPrompt = `You are BauBay's helpful marketplace assistant.
+  const systemPrompt = `You are ReBau's helpful marketplace assistant.
 You have access to the current site inventory: ${JSON.stringify(inventoryContext)}.
 Answer questions about availability, price, and condition.
 If the user asks for items (e.g., "Do you have bricks?"), search your context and reply with the item id formatted as [ADD_ITEM:id] to show it, or [CART_ITEM:id] to add it to cart.
@@ -159,7 +159,7 @@ Keep responses concise and friendly.`;
              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
           </div>
           <div>
-             <h3 className="font-bold text-lg leading-none">BauBay Assistant</h3>
+             <h3 className="font-bold text-lg leading-none">ReBau Assistant</h3>
              <span className="text-xs text-gray-400">AI Powered</span>
           </div>
         </div>

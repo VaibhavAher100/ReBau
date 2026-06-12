@@ -50,7 +50,7 @@ export const ProfileModal: React.FC<ProfileModalProps> = ({ requests, onClose })
                         </div>
                         <div>
                             <h3 className="text-lg font-bold text-stone-900">Site Manager</h3>
-                            <p className="text-sm text-stone-500">BauBay Admin • Nürnberg Region</p>
+                            <p className="text-sm text-stone-500">ReBau Admin • Nürnberg Region</p>
                             <div className="flex items-center gap-2 mt-2">
                                 <span className="text-[10px] font-bold uppercase tracking-wider bg-orange-100 text-orange-800 px-2 py-0.5 rounded">Pro Plan</span>
                                 <span className="text-[10px] font-bold uppercase tracking-wider bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded">Verified</span>
