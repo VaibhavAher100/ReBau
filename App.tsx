@@ -15,7 +15,7 @@ import { totalCo2Saved, totalEurSaved, co2SavedKg } from './services/sustainabil
 const SEED_INVENTORY: MaterialItem[] = [
   {
     id: '1',
-    name: 'Weathered Pine Beamss',
+    name: 'Weathered Pine Beams',
     description: 'Structural pine beams recovered from demolition in Altstadt. Minor surface weathering but structurally sound.',
     category: MaterialCategory.WOOD,
     condition: Condition.GOOD,
