@@ -11,6 +11,8 @@ import { MaterialItem, MaterialCategory, Condition, AnalysisResult, MaterialRequ
 import { NavBar } from './components/NavBar';
 import { totalCo2Saved, totalEurSaved, co2SavedKg } from './services/sustainability';
 
+const BASE = import.meta.env.BASE_URL;
+
 // Mock initial data - NUREMBERG LOCATIONS
 const SEED_INVENTORY: MaterialItem[] = [
   {
@@ -20,7 +22,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.WOOD,
     condition: Condition.GOOD,
     reusabilityScore: 85,
-    imageUrl: '/materials/pine-beams.jpg',
+    imageUrl: BASE + 'materials/pine-beams.jpg',
     quantity: '12 Units (4m)',
     estimatedValue: 450,
     location: 'Altstadt, Nürnberg',
@@ -39,7 +41,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.METAL,
     condition: Condition.FAIR,
     reusabilityScore: 70,
-    imageUrl: '/materials/steel-pipes.jpg',
+    imageUrl: BASE + 'materials/steel-pipes.jpg',
     quantity: '25 Meters',
     estimatedValue: 120,
     location: 'Gostenhof, Nürnberg',
@@ -57,7 +59,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.BRICK,
     condition: Condition.NEW,
     reusabilityScore: 100,
-    imageUrl: '/materials/red-bricks.jpg',
+    imageUrl: BASE + 'materials/red-bricks.jpg',
     quantity: '500 Bricks',
     estimatedValue: 380,
     location: 'Südstadt, Nürnberg',
@@ -76,7 +78,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.ELECTRICAL,
     condition: Condition.SCRAP,
     reusabilityScore: 20,
-    imageUrl: '/materials/copper-wire.jpg',
+    imageUrl: BASE + 'materials/copper-wire.jpg',
     quantity: '15 kg',
     estimatedValue: 95,
     location: 'Maxfeld, Nürnberg',
@@ -93,7 +95,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.OTHER,
     condition: Condition.NEW,
     reusabilityScore: 100,
-    imageUrl: '/materials/rockwool-insulation.jpg',
+    imageUrl: BASE + 'materials/rockwool-insulation.jpg',
     quantity: '3 Rolls',
     estimatedValue: 150,
     location: 'St. Johannis, Nürnberg',
@@ -111,7 +113,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.CONCRETE,
     condition: Condition.NEW,
     reusabilityScore: 100,
-    imageUrl: '/materials/portland-cement.jpg',
+    imageUrl: BASE + 'materials/portland-cement.jpg',
     quantity: '40 Bags (25kg)',
     estimatedValue: 280,
     location: 'Langwasser, Nürnberg',
@@ -130,7 +132,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.WOOD,
     condition: Condition.GOOD,
     reusabilityScore: 90,
-    imageUrl: '/materials/oak-flooring.jpg',
+    imageUrl: BASE + 'materials/oak-flooring.jpg',
     quantity: '85 sqm',
     estimatedValue: 1200,
     location: 'Erlenstegen, Nürnberg',
@@ -150,7 +152,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.GLASS,
     condition: Condition.GOOD,
     reusabilityScore: 85,
-    imageUrl: '/materials/glass-panels.jpg',
+    imageUrl: BASE + 'materials/glass-panels.jpg',
     quantity: '10 Panels',
     estimatedValue: 500,
     location: 'Mögeldorf, Nürnberg',
@@ -169,7 +171,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.METAL,
     condition: Condition.FAIR,
     reusabilityScore: 80,
-    imageUrl: '/materials/scaffold-tubes.jpg',
+    imageUrl: BASE + 'materials/scaffold-tubes.jpg',
     quantity: '50 Units',
     estimatedValue: 600,
     location: 'Wöhrd, Nürnberg',
@@ -187,7 +189,7 @@ const SEED_INVENTORY: MaterialItem[] = [
     category: MaterialCategory.CONCRETE,
     condition: Condition.GOOD,
     reusabilityScore: 95,
-    imageUrl: '/materials/cobblestones.jpg',
+    imageUrl: BASE + 'materials/cobblestones.jpg',
     quantity: '2 Tons',
     estimatedValue: 300,
     location: 'Dutzendteich, Nürnberg',
@@ -473,11 +475,11 @@ const App: React.FC = () => {
   const generateMockItem = (): MaterialItem => {
       const locations = ['Langwasser', 'Nordstadt', 'Mitte', 'Gostenhof', 'Ziegelstein', 'Fürth'];
       const itemTemplates = [
-          { name: 'Used Scaffold Planks', cat: MaterialCategory.WOOD, img: '/materials/scaffold-planks.jpg', val: 120 },
-          { name: 'Surplus Floor Tiles', cat: MaterialCategory.CONCRETE, img: '/materials/floor-tiles.jpg', val: 200 },
-          { name: 'Copper Wiring Scraps', cat: MaterialCategory.ELECTRICAL, img: '/materials/copper-wire.jpg', val: 350 },
-          { name: 'Steel Reinforcement Mesh', cat: MaterialCategory.METAL, img: '/materials/steel-pipes.jpg', val: 400 },
-          { name: 'Plywood Sheets', cat: MaterialCategory.WOOD, img: '/materials/scaffold-planks.jpg', val: 80 }
+          { name: 'Used Scaffold Planks', cat: MaterialCategory.WOOD, img: BASE + 'materials/scaffold-planks.jpg', val: 120 },
+          { name: 'Surplus Floor Tiles', cat: MaterialCategory.CONCRETE, img: BASE + 'materials/floor-tiles.jpg', val: 200 },
+          { name: 'Copper Wiring Scraps', cat: MaterialCategory.ELECTRICAL, img: BASE + 'materials/copper-wire.jpg', val: 350 },
+          { name: 'Steel Reinforcement Mesh', cat: MaterialCategory.METAL, img: BASE + 'materials/steel-pipes.jpg', val: 400 },
+          { name: 'Plywood Sheets', cat: MaterialCategory.WOOD, img: BASE + 'materials/scaffold-planks.jpg', val: 80 }
       ];
 
       const template = itemTemplates[Math.floor(Math.random() * itemTemplates.length)];
@@ -663,12 +665,12 @@ const App: React.FC = () => {
 
         <div className="px-6 py-4 flex justify-between items-center max-w-7xl mx-auto w-full">
             <div className="flex items-center gap-4">
-              <img src="/logo.jpeg" alt="ReBau" className="h-12 w-auto object-contain drop-shadow-sm" />
+              <img src={BASE + 'logo.jpeg'} alt="ReBau" className="h-12 w-auto object-contain drop-shadow-sm" />
 
               <div className="hidden md:flex flex-col border-l-2 border-stone-200 pl-4 h-10 justify-center">
                   <span className="text-[9px] text-stone-400 uppercase font-black tracking-widest leading-none mb-1">Powered by</span>
                   <div className="flex items-center gap-1.5">
-                      <img src="/fau-logo.svg" alt="FAU Erlangen-Nürnberg" className="h-4 w-auto object-contain" />
+                      <img src={BASE + 'fau-logo.svg'} alt="FAU Erlangen-Nürnberg" className="h-4 w-auto object-contain" />
                       <span className="text-[10px] font-semibold text-stone-600 leading-tight">AI Innovation at FAU Erlangen-Nürnberg</span>
                   </div>
               </div>
