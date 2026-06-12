@@ -26,3 +26,8 @@ dist-ssr
 node_modules/
 dist/
 .env
+
+# local session artifacts
+.session/
+.pptx-work/
+.claude/scheduled_tasks.lock
