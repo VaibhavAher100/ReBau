@@ -6,11 +6,13 @@ import { ItemDetails } from './components/ItemDetails';
 import { CartDrawer } from './components/CartDrawer';
 import { ChatAssistant } from './components/ChatAssistant';
 import { ProfileModal } from './components/ProfileModal';
+import { BlueprintMatch } from './components/BlueprintMatch';
 import { MaterialItem, MaterialCategory, Condition, AnalysisResult, MaterialRequest, RequestStatus } from './types';
 import { NavBar } from './components/NavBar';
+import { totalCo2Saved, totalEurSaved, co2SavedKg } from './services/sustainability';
 
 // Mock initial data - NUREMBERG LOCATIONS
-const INITIAL_INVENTORY: MaterialItem[] = [
+const SEED_INVENTORY: MaterialItem[] = [
   {
     id: '1',
     name: 'Weathered Pine Beamss',
@@ -115,7 +117,7 @@ const INITIAL_INVENTORY: MaterialItem[] = [
     location: 'Langwasser, Nürnberg',
     dateAdded: '2023-10-27',
     isAvailable: true,
-    isPublished: true, // Marketplace item from "others"
+    isPublished: true,
     isMine: false,
     coordinates: { lat: 49.4100, lng: 11.1300 },
     distance: '3.2 km',
@@ -130,7 +132,7 @@ const INITIAL_INVENTORY: MaterialItem[] = [
     reusabilityScore: 90,
     imageUrl: 'https://images.unsplash.com/photo-1516455590571-18256e5bb9ff?auto=format&fit=crop&w=800&q=80',
     quantity: '85 sqm',
-    estimatedValue: 1200, 
+    estimatedValue: 1200,
     location: 'Erlenstegen, Nürnberg',
     dateAdded: '2023-10-28',
     isAvailable: true,
@@ -198,48 +200,89 @@ const INITIAL_INVENTORY: MaterialItem[] = [
   }
 ];
 
+const MOCK_INITIAL_REQUEST: MaterialRequest = {
+  id: 'mock-req-1',
+  requestId: 'REQ-1092',
+  items: [SEED_INVENTORY[0], SEED_INVENTORY[1]],
+  date: '2023-10-20T10:30:00Z',
+  status: RequestStatus.APPROVED,
+  totalValue: 570
+};
+
+const LS_KEY = 'hackmate_state_v1';
+
+interface PersistedState {
+  inventory: MaterialItem[];
+  requests: MaterialRequest[];
+  seeded: boolean;
+}
+
+function loadState(): PersistedState | null {
+  try {
+    const raw = localStorage.getItem(LS_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw) as PersistedState;
+  } catch {
+    return null;
+  }
+}
+
+function saveState(state: PersistedState) {
+  try {
+    localStorage.setItem(LS_KEY, JSON.stringify(state));
+  } catch {
+    // ignore quota errors
+  }
+}
+
 // Helper to animate numbers counting up
 const AnimatedCounter = ({ value, suffix = '' }: { value: number, suffix?: string }) => {
     const [displayValue, setDisplayValue] = useState(0);
 
     useEffect(() => {
         let startTimestamp: number | null = null;
-        const duration = 2000; // 2 seconds
+        const duration = 2000;
 
         const step = (timestamp: number) => {
             if (!startTimestamp) startTimestamp = timestamp;
             const progress = Math.min((timestamp - startTimestamp) / duration, 1);
             const easeOutQuart = 1 - Math.pow(1 - progress, 4);
-            
+
             setDisplayValue(Math.floor(easeOutQuart * value));
-            
+
             if (progress < 1) {
                 window.requestAnimationFrame(step);
             } else {
-                setDisplayValue(value); // Ensure final value is exact
+                setDisplayValue(value);
             }
         };
-        
+
         window.requestAnimationFrame(step);
     }, [value]);
 
     return <span className="tabular-nums">{displayValue.toLocaleString()}{suffix}</span>;
 };
 
-// --- Sustainability Board Component ---
-const SustainabilityBoard = ({ inventory }: { inventory: MaterialItem[] }) => {
+// --- Sustainability Board Component (uses real carbon factors) ---
+const SustainabilityBoard = ({ inventory, cartItems }: { inventory: MaterialItem[], cartItems: MaterialItem[] }) => {
     const [showDetails, setShowDetails] = useState(false);
 
-    // Filter for my items to show personal/company impact
     const myItems = inventory.filter(i => i.isMine);
-    
-    // Heuristic calculations for demo purposes
-    const totalValue = myItems.reduce((acc, item) => acc + item.estimatedValue, 0);
-    const co2Saved = Math.round(totalValue * 0.45);
-    const wasteDiverted = Math.round(totalValue * 1.2);
+
+    // Real CO2 calculations via sustainability service
+    const co2Saved = Math.round(totalCo2Saved(myItems));
+    const eurSavedTotal = totalEurSaved(myItems);
+    const wasteDiverted = Math.round(myItems.reduce((acc, item) => {
+      const match = item.quantity.match(/^(\d+(\.\d+)?)/);
+      return acc + (match ? parseFloat(match[1]) : 1) * 5;
+    }, 0));
     const treesEquivalent = Math.max(1, Math.round(co2Saved / 20));
 
-    // Mock Monthly Data for Chart
+    // Cart impact
+    const cartCo2 = Math.round(totalCo2Saved(cartItems));
+    const cartEur = totalEurSaved(cartItems);
+
+    // Monthly data based on real calculation
     const monthlyStats = [
         { month: 'May', value: Math.round(co2Saved * 0.1) },
         { month: 'Jun', value: Math.round(co2Saved * 0.15) },
@@ -252,18 +295,17 @@ const SustainabilityBoard = ({ inventory }: { inventory: MaterialItem[] }) => {
 
     return (
         <>
-        <div 
+        <div
             onClick={() => setShowDetails(true)}
             className="h-full bg-gradient-to-br from-stone-900 to-stone-800 rounded-3xl p-5 md:p-8 text-white shadow-2xl shadow-stone-900/20 relative overflow-hidden group cursor-pointer transform hover:scale-[1.01] transition-all duration-300 border border-stone-700/50"
         >
-            {/* Decorative Background Pattern */}
-            <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay" 
+            <div className="absolute inset-0 opacity-20 pointer-events-none mix-blend-overlay"
                  style={{backgroundImage: 'radial-gradient(circle at 2px 2px, white 1px, transparent 0)', backgroundSize: '32px 32px'}}>
             </div>
-            
+
             <div className="absolute -right-20 -top-20 w-64 h-64 bg-orange-500 rounded-full mix-blend-overlay filter blur-[64px] opacity-30 animate-pulse"></div>
             <div className="absolute -left-20 bottom-0 w-64 h-64 bg-emerald-500 rounded-full mix-blend-overlay filter blur-[64px] opacity-20"></div>
-            
+
             <div className="relative z-10 flex flex-col h-full justify-between">
                 <div className="flex justify-between items-start mb-6">
                     <div>
@@ -280,26 +322,34 @@ const SustainabilityBoard = ({ inventory }: { inventory: MaterialItem[] }) => {
                 </div>
 
                 <div className="grid grid-cols-3 gap-2 md:gap-3">
-                    {/* Metric 1 */}
                     <div className="bg-black/30 backdrop-blur-md rounded-2xl p-3 md:p-4 border border-white/5 text-center hover:bg-black/40 transition-colors">
                         <div className="text-xl md:text-3xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-b from-white to-stone-400"><AnimatedCounter value={co2Saved} suffix="kg" /></div>
-                        <div className="text-[9px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest break-words leading-tight">CO₂ Avoided</div>
+                        <div className="text-[9px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest break-words leading-tight">CO2 Avoided</div>
                     </div>
-                    
-                    {/* Metric 2 */}
+
                     <div className="bg-black/30 backdrop-blur-md rounded-2xl p-3 md:p-4 border border-white/5 text-center hover:bg-black/40 transition-colors">
                         <div className="text-xl md:text-3xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-b from-white to-stone-400"><AnimatedCounter value={wasteDiverted} suffix="kg" /></div>
                         <div className="text-[9px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest break-words leading-tight">Waste Diverted</div>
                     </div>
 
-                    {/* Metric 3 */}
                     <div className="bg-black/30 backdrop-blur-md rounded-2xl p-3 md:p-4 border border-white/5 text-center hover:bg-black/40 transition-colors">
                         <div className="text-xl md:text-3xl font-black mb-1 text-emerald-300"><AnimatedCounter value={treesEquivalent} /></div>
                         <div className="text-[9px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest break-words leading-tight">Trees Saved</div>
                     </div>
                 </div>
 
-                <div className="mt-6 text-center">
+                {/* Savings Widget */}
+                {(cartCo2 > 0 || cartEur > 0) && (
+                  <div className="mt-4 bg-emerald-500/10 border border-emerald-500/20 rounded-2xl p-3 flex items-center justify-between">
+                    <span className="text-[10px] text-emerald-300 font-bold uppercase tracking-widest">Cart savings</span>
+                    <div className="flex gap-3">
+                      <span className="text-xs font-black text-emerald-300">€{cartEur}</span>
+                      <span className="text-xs font-black text-emerald-300">{cartCo2}kg CO2</span>
+                    </div>
+                  </div>
+                )}
+
+                <div className="mt-4 text-center">
                     <span className="text-xs text-stone-400 font-medium flex items-center justify-center gap-1.5 group-hover:text-white transition-colors">
                         Tap for detailed analytics <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="group-hover:translate-x-1 transition-transform"><line x1="5" y1="12" x2="19" y2="12"></line><polyline points="12 5 19 12 12 19"></polyline></svg>
                     </span>
@@ -307,18 +357,17 @@ const SustainabilityBoard = ({ inventory }: { inventory: MaterialItem[] }) => {
             </div>
         </div>
 
-        {/* DETAILS MODAL */}
         {showDetails && (
-            <div 
+            <div
                 className="fixed inset-0 z-[100] flex items-center justify-center p-4 bg-stone-900/80 backdrop-blur-lg animate-fade-in"
                 onClick={() => setShowDetails(false)}
             >
-                <div 
+                <div
                     className="bg-white rounded-[2.5rem] w-full max-w-lg shadow-2xl animate-bounce-in border border-stone-200 flex flex-col max-h-[85vh] overflow-hidden"
                     onClick={(e) => e.stopPropagation()}
                 >
                     <div className="bg-stone-900 p-8 text-white relative shrink-0">
-                         <div className="absolute inset-0 opacity-20" 
+                         <div className="absolute inset-0 opacity-20"
                               style={{backgroundImage: 'url("data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.4\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E")'}}>
                          </div>
                         <button onClick={() => setShowDetails(false)} className="absolute top-6 right-6 p-2 bg-white/10 rounded-full hover:bg-white/20 transition-colors text-white z-10">
@@ -331,22 +380,31 @@ const SustainabilityBoard = ({ inventory }: { inventory: MaterialItem[] }) => {
                     </div>
 
                     <div className="p-8 bg-stone-50 overflow-y-auto">
+                         <div className="grid grid-cols-2 gap-4 mb-8">
+                           <div className="bg-emerald-50 p-4 rounded-2xl border border-emerald-100 text-center">
+                             <div className="text-2xl font-black text-emerald-700">{co2Saved}kg</div>
+                             <div className="text-xs text-emerald-600 font-bold uppercase mt-1">CO2 Avoided</div>
+                           </div>
+                           <div className="bg-blue-50 p-4 rounded-2xl border border-blue-100 text-center">
+                             <div className="text-2xl font-black text-blue-700">€{eurSavedTotal.toLocaleString()}</div>
+                             <div className="text-xs text-blue-600 font-bold uppercase mt-1">EUR Saved</div>
+                           </div>
+                         </div>
+
                          <div className="flex items-center justify-between mb-8">
-                             <h3 className="font-bold text-stone-800 text-lg">CO₂ Avoided <span className="text-stone-400 text-sm font-normal ml-1">(Last 6 Months)</span></h3>
+                             <h3 className="font-bold text-stone-800 text-lg">CO2 Avoided <span className="text-stone-400 text-sm font-normal ml-1">(Last 6 Months)</span></h3>
                              <span className="text-sm font-bold text-emerald-700 bg-emerald-100 px-3 py-1.5 rounded-lg">Total: {co2Saved}kg</span>
                          </div>
 
-                         {/* Simple Bar Chart */}
                          <div className="flex items-end gap-3 h-56 border-b border-stone-200 pb-4 mb-4">
                              {monthlyStats.map((stat, idx) => {
                                  const heightPct = (stat.value / maxMonthVal) * 100;
                                  return (
                                      <div key={idx} className="flex-1 flex flex-col items-center gap-3 group h-full justify-end">
-                                         <div 
+                                         <div
                                             className="w-full bg-emerald-300 rounded-t-lg relative group-hover:bg-emerald-500 transition-all duration-300 shadow-sm"
                                             style={{ height: `${heightPct}%` }}
                                          >
-                                            {/* Tooltip */}
                                             <div className="absolute -top-10 left-1/2 -translate-x-1/2 bg-stone-900 text-white text-xs font-bold py-1.5 px-3 rounded shadow-lg opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap transform -translate-y-1 group-hover:translate-y-0 z-10">
                                                 {stat.value}kg
                                                 <div className="absolute bottom-0 left-1/2 -translate-x-1/2 translate-y-1/2 w-2 h-2 bg-stone-900 rotate-45"></div>
@@ -375,38 +433,43 @@ const SustainabilityBoard = ({ inventory }: { inventory: MaterialItem[] }) => {
 
 
 const App: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<'inventory' | 'market'>('inventory');
+  // localStorage hydration
+  const persisted = loadState();
+  const [activeTab, setActiveTab] = useState<'inventory' | 'market' | 'blueprint'>('inventory');
   const [activeFilter, setActiveFilter] = useState('All');
   const [isScanning, setIsScanning] = useState(false);
-  const [inventory, setInventory] = useState<MaterialItem[]>(INITIAL_INVENTORY);
+  const [inventory, setInventory] = useState<MaterialItem[]>(
+    persisted ? persisted.inventory : SEED_INVENTORY
+  );
   const [notification, setNotification] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<MaterialItem | null>(null);
-  
-  // Notification Preferences
+
   const [prefsOpen, setPrefsOpen] = useState(false);
   const [notifPreferences, setNotifPreferences] = useState<string[]>([MaterialCategory.WOOD, 'High Value']);
 
-  // Cart State
   const [cartItems, setCartItems] = useState<MaterialItem[]>([]);
   const [isCartOpen, setIsCartOpen] = useState(false);
 
-  // Profile & Requests State
   const [isProfileOpen, setIsProfileOpen] = useState(false);
-  const [requests, setRequests] = useState<MaterialRequest[]>([
-      {
-          id: 'mock-req-1',
-          requestId: 'REQ-1092',
-          items: [INITIAL_INVENTORY[0], INITIAL_INVENTORY[1]],
-          date: '2023-10-20T10:30:00Z',
-          status: RequestStatus.APPROVED,
-          totalValue: 570
-      }
-  ]);
+  const [requests, setRequests] = useState<MaterialRequest[]>(
+    persisted ? persisted.requests : [MOCK_INITIAL_REQUEST]
+  );
 
-  // Chat State
   const [isChatOpen, setIsChatOpen] = useState(false);
 
-  // Helper to generate a random market item for simulation
+  // Persist state to localStorage whenever inventory or requests change
+  useEffect(() => {
+    saveState({ inventory, requests, seeded: true });
+  }, [inventory, requests]);
+
+  // Merge seed data only on first run (no existing persisted state)
+  useEffect(() => {
+    if (!persisted) {
+      setInventory(SEED_INVENTORY);
+      setRequests([MOCK_INITIAL_REQUEST]);
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   const generateMockItem = (): MaterialItem => {
       const locations = ['Langwasser', 'Nordstadt', 'Mitte', 'Gostenhof', 'Ziegelstein', 'Fürth'];
       const itemTemplates = [
@@ -419,7 +482,7 @@ const App: React.FC = () => {
 
       const template = itemTemplates[Math.floor(Math.random() * itemTemplates.length)];
       const location = locations[Math.floor(Math.random() * locations.length)];
-      
+
       return {
           id: 'market-' + Date.now(),
           name: template.name,
@@ -440,7 +503,6 @@ const App: React.FC = () => {
       };
   };
 
-  // Simulate Real-time Market Activity & Notifications
   useEffect(() => {
     const interval = setInterval(() => {
         const newItem = generateMockItem();
@@ -450,9 +512,9 @@ const App: React.FC = () => {
         const matchesValue = isHighValue && notifPreferences.includes('High Value');
 
         if (matchesCategory || matchesValue) {
-            showNotification(`🔔 New ${newItem.name} available in ${newItem.location.split(',')[0]}!`);
+            showNotification(`New ${newItem.name} available in ${newItem.location.split(',')[0]}!`);
         }
-    }, 15000); 
+    }, 15000);
 
     return () => clearInterval(interval);
   }, [notifPreferences]);
@@ -464,10 +526,10 @@ const App: React.FC = () => {
   }, [inventory]);
 
   const handleAddItem = (
-    analysis: AnalysisResult, 
-    image: string, 
-    quantity: string, 
-    location: string, 
+    analysis: AnalysisResult,
+    image: string,
+    quantity: string,
+    location: string,
     value: number,
     coords?: { lat: number; lng: number }
   ) => {
@@ -498,9 +560,9 @@ const App: React.FC = () => {
   };
 
   const handlePublishItem = (id: string, updates: Partial<MaterialItem>) => {
-    setInventory(prev => prev.map(item => 
-      item.id === id 
-        ? { ...item, ...updates, isPublished: true } 
+    setInventory(prev => prev.map(item =>
+      item.id === id
+        ? { ...item, ...updates, isPublished: true }
         : item
     ));
     setSelectedItem(null);
@@ -540,8 +602,8 @@ const App: React.FC = () => {
   };
 
   const togglePreference = (pref: string) => {
-      setNotifPreferences(prev => 
-        prev.includes(pref) 
+      setNotifPreferences(prev =>
+        prev.includes(pref)
             ? prev.filter(p => p !== pref)
             : [...prev, pref]
       );
@@ -551,12 +613,12 @@ const App: React.FC = () => {
     if (tab === 'scan') {
       setIsScanning(true);
     } else {
-      setActiveTab(tab as 'inventory' | 'market');
+      setActiveTab(tab as 'inventory' | 'market' | 'blueprint');
     }
   };
 
   const displayItems = useMemo(() => {
-    if (isScanning) return [];
+    if (isScanning || activeTab === 'blueprint') return [];
     let items: MaterialItem[] = [];
     if (activeTab === 'market') {
        items = inventory.filter(i => i.isPublished);
@@ -575,43 +637,45 @@ const App: React.FC = () => {
 
   if (isScanning) {
     return (
-      <Scanner 
-        onAddInventory={handleAddItem} 
-        onCancel={() => setIsScanning(false)} 
+      <Scanner
+        onAddInventory={handleAddItem}
+        onCancel={() => setIsScanning(false)}
       />
     );
   }
 
   const isMarketplace = activeTab === 'market';
+  const isBlueprint = activeTab === 'blueprint';
+
+  // Cumulative savings widget values (all completed requests + cart)
+  const allRequestItems = requests.flatMap(r => r.items);
+  const cumulativeCo2 = Math.round(totalCo2Saved([...allRequestItems, ...cartItems]));
+  const cumulativeEur = totalEurSaved([...allRequestItems, ...cartItems]);
 
   return (
     <div className="min-h-[100dvh] font-sans relative selection:bg-orange-100 selection:text-orange-900 pb-20">
-      
-      {/* Top Header with Tabs */}
+
+      {/* Top Header */}
       <div className="sticky top-0 z-40 bg-white/70 backdrop-blur-xl border-b border-white/20 shadow-sm transition-all duration-300">
-        {/* Demo Banner */}
         <div className="bg-stone-900 text-stone-300 text-[10px] font-medium py-1.5 px-4 text-center tracking-wide">
           BauBay Demo • <span className="text-orange-400">Nürnberg Region</span>
         </div>
 
-        {/* Branding & Profile & Cart */}
         <div className="px-6 py-4 flex justify-between items-center max-w-7xl mx-auto w-full">
             <div className="flex items-center gap-4">
-              {/* LOGO */}
               <svg width="140" height="45" viewBox="0 0 140 45" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm hover:scale-105 transition-transform duration-300">
                 <defs>
                     <pattern id="brick-pattern" x="0" y="0" width="10" height="6" patternUnits="userSpaceOnUse">
-                        <rect width="10" height="6" fill="#fdba74"/> 
-                        <rect x="0.5" y="0.5" width="9" height="2" rx="0.5" fill="#c2410c"/> 
-                        <rect x="0.5" y="3" width="4" height="2" rx="0.5" fill="#9a3412"/> 
+                        <rect width="10" height="6" fill="#fdba74"/>
+                        <rect x="0.5" y="0.5" width="9" height="2" rx="0.5" fill="#c2410c"/>
+                        <rect x="0.5" y="3" width="4" height="2" rx="0.5" fill="#9a3412"/>
                         <rect x="5" y="3" width="4.5" height="2" rx="0.5" fill="#c2410c"/>
                     </pattern>
                 </defs>
                 <text x="2" y="36" fontFamily="'Inter', sans-serif" fontWeight="900" fontSize="44" fill="url(#brick-pattern)" stroke="#7c2d12" strokeWidth="1.5">B</text>
                 <text x="38" y="34" fontFamily="'Inter', sans-serif" fontWeight="700" fontSize="28" fill="#1c1917" letterSpacing="-0.5">auBay</text>
               </svg>
-              
-              {/* "Powered By" Badge */}
+
               <div className="hidden md:flex flex-col border-l-2 border-stone-200 pl-4 h-8 justify-center">
                   <span className="text-[9px] text-stone-400 uppercase font-black tracking-widest leading-none mb-0.5">Powered by</span>
                   <div className="flex items-center gap-1">
@@ -619,18 +683,31 @@ const App: React.FC = () => {
                   </div>
               </div>
             </div>
-            
+
             <div className="flex items-center gap-4">
-                 {/* Notification Bell */}
+                {/* Persistent Savings Widget */}
+                {(cumulativeCo2 > 0 || cumulativeEur > 0) && (
+                  <div className="hidden md:flex items-center gap-3 bg-emerald-50 border border-emerald-200 px-4 py-2 rounded-2xl">
+                    <div className="text-center">
+                      <div className="text-xs font-black text-emerald-700">€{cumulativeEur.toLocaleString()}</div>
+                      <div className="text-[9px] text-emerald-500 font-bold uppercase">Saved</div>
+                    </div>
+                    <div className="w-px h-6 bg-emerald-200"></div>
+                    <div className="text-center">
+                      <div className="text-xs font-black text-emerald-700">{cumulativeCo2}kg</div>
+                      <div className="text-[9px] text-emerald-500 font-bold uppercase">CO2</div>
+                    </div>
+                  </div>
+                )}
+
                 <div className="relative">
-                    <button 
+                    <button
                         onClick={() => setPrefsOpen(!prefsOpen)}
                         className={`p-3 rounded-full transition-all duration-300 ${prefsOpen ? 'bg-orange-50 text-orange-600 shadow-inner' : 'text-stone-500 hover:bg-white hover:shadow-md hover:text-stone-800'}`}
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>
                         {notifPreferences.length > 0 && <span className="absolute top-2.5 right-3 w-2 h-2 bg-orange-500 rounded-full border border-white animate-pulse"></span>}
                     </button>
-                    {/* Prefs Popover */}
                     {prefsOpen && (
                         <>
                         <div className="fixed inset-0 z-40" onClick={() => setPrefsOpen(false)}></div>
@@ -641,7 +718,7 @@ const App: React.FC = () => {
                             </div>
                             <div className="p-2 space-y-1 max-h-64 overflow-y-auto">
                                 {['Wood', 'Metal', 'Concrete', 'High Value', 'Electrical', 'Brick'].map(pref => (
-                                    <button 
+                                    <button
                                         key={pref}
                                         onClick={() => togglePreference(pref)}
                                         className="w-full flex items-center justify-between px-4 py-3 text-sm rounded-2xl hover:bg-stone-50 transition-colors group"
@@ -658,8 +735,7 @@ const App: React.FC = () => {
                     )}
                 </div>
 
-                {/* Cart Icon (Header) */}
-                <button 
+                <button
                   onClick={() => setIsCartOpen(true)}
                   className="relative p-3 text-stone-500 hover:bg-white hover:shadow-md hover:text-stone-800 rounded-full transition-all duration-300"
                 >
@@ -670,7 +746,7 @@ const App: React.FC = () => {
                      </span>
                    )}
                 </button>
-                <div 
+                <div
                     onClick={() => setIsProfileOpen(true)}
                     className="w-10 h-10 bg-gradient-to-br from-stone-100 to-stone-200 rounded-full flex items-center justify-center text-xs font-black text-stone-600 border-2 border-white shadow-lg shadow-stone-200 hover:scale-105 transition-transform cursor-pointer"
                 >
@@ -680,131 +756,131 @@ const App: React.FC = () => {
         </div>
       </div>
 
-      <main className="max-w-7xl mx-auto p-6 md:p-8 pb-32 animate-fade-in">
-        {/* Header Text for context */}
-        <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
-           <div>
-             <div className="flex items-center gap-2 mb-2">
-                <span className={`h-2 w-2 rounded-full ${isMarketplace ? 'bg-blue-500' : 'bg-orange-500'}`}></span>
-                <span className="text-xs font-bold uppercase tracking-widest text-stone-400">{isMarketplace ? 'Public Exchange' : 'My Inventory'}</span>
+      {/* Blueprint Match Tab */}
+      {isBlueprint ? (
+        <BlueprintMatch
+          marketplaceItems={inventory.filter(i => i.isPublished && i.isAvailable)}
+          onAddToCart={handleAddToCart}
+        />
+      ) : (
+        <main className="max-w-7xl mx-auto p-6 md:p-8 pb-32 animate-fade-in">
+          <header className="mb-10 flex flex-col md:flex-row md:items-end justify-between gap-6">
+             <div>
+               <div className="flex items-center gap-2 mb-2">
+                  <span className={`h-2 w-2 rounded-full ${isMarketplace ? 'bg-blue-500' : 'bg-orange-500'}`}></span>
+                  <span className="text-xs font-bold uppercase tracking-widest text-stone-400">{isMarketplace ? 'Public Exchange' : 'My Inventory'}</span>
+               </div>
+               <h2 className="text-4xl md:text-5xl font-black text-stone-900 tracking-tighter">
+                 {isMarketplace ? 'Marketplace' : 'Site Overview'}
+               </h2>
              </div>
-             <h2 className="text-4xl md:text-5xl font-black text-stone-900 tracking-tighter">
-               {isMarketplace ? 'Marketplace' : 'Site Overview'}
-             </h2>
-           </div>
-           {!isMarketplace && (
-              <button 
-                onClick={() => setIsScanning(true)}
-                className="hidden md:flex bg-stone-900 text-white px-8 py-4 rounded-2xl font-bold shadow-2xl shadow-stone-900/30 hover:bg-stone-800 hover:-translate-y-1 transition-all items-center gap-3 active:scale-95"
-              >
-                <div className="bg-white/20 p-1 rounded-full">
-                    <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
-                </div>
-                Scan New Items
-              </button>
-           )}
-        </header>
+             {!isMarketplace && (
+                <button
+                  onClick={() => setIsScanning(true)}
+                  className="hidden md:flex bg-stone-900 text-white px-8 py-4 rounded-2xl font-bold shadow-2xl shadow-stone-900/30 hover:bg-stone-800 hover:-translate-y-1 transition-all items-center gap-3 active:scale-95"
+                >
+                  <div className="bg-white/20 p-1 rounded-full">
+                      <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+                  </div>
+                  Scan New Items
+                </button>
+             )}
+          </header>
 
-        {/* Dashboard / Stats Section */}
-        {!isMarketplace && (
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
-                {/* Sustainability Board - Left/Top */}
-                <div className="lg:col-span-2 h-full">
-                    <SustainabilityBoard inventory={inventory} />
-                </div>
-
-                {/* Economic Stats - Right/Bottom */}
-                <div className="flex flex-col gap-6 h-full">
-                     {/* Value Card */}
-                     <div className="bg-stone-900 rounded-3xl p-8 shadow-2xl shadow-stone-900/20 flex flex-col justify-between group hover:shadow-stone-900/40 transition-shadow h-full relative overflow-hidden">
-                         <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
-                         <div>
-                            <div className="flex justify-between items-start mb-4">
-                                <div className="p-2 bg-stone-800 rounded-xl inline-block">
-                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10h12"/><path d="M4 14h9"/><path d="M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"/></svg>
-                                </div>
-                                <span className="text-[10px] font-bold text-stone-500 uppercase tracking-widest bg-stone-800 px-2 py-1 rounded">YTD</span>
-                            </div>
-                            <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Total Value Recovered</p>
-                            <h3 className="text-4xl lg:text-5xl font-black text-white tracking-tighter">€{totalRecoveredValue.toLocaleString()}</h3>
-                         </div>
-                         <div className="text-xs font-bold text-emerald-400 mt-6 flex items-center gap-1.5 bg-emerald-500/10 self-start px-3 py-1.5 rounded-full border border-emerald-500/20">
-                             <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
-                             +12% from last month
-                         </div>
-                     </div>
-                     
-                     <div className="grid grid-cols-2 gap-4 flex-1 min-h-[140px]">
-                         <div className="bg-white rounded-3xl p-6 shadow-xl shadow-stone-200/50 flex flex-col justify-center items-center text-center hover:-translate-y-1 transition-transform border border-stone-100">
-                            <p className="text-stone-400 text-[9px] font-black uppercase tracking-widest mb-2">Items Logged</p>
-                            <h3 className="text-4xl font-black text-stone-800">{inventory.filter(i => i.isMine).length}</h3>
-                         </div>
-                         <div className="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-6 shadow-xl shadow-indigo-100/50 flex flex-col justify-center items-center text-center hover:-translate-y-1 transition-transform border border-indigo-50">
-                            <p className="text-indigo-400 text-[9px] font-black uppercase tracking-widest mb-2">Internal Matches</p>
-                            <h3 className="text-4xl font-black text-indigo-600">{inventory.filter(i => i.isMine && i.internalProjectMatch).length}</h3>
-                         </div>
-                     </div>
-                </div>
-            </div>
-        )}
-
-        {/* Filter Chips */}
-        <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 mb-4 pl-1">
-          {['All', 'Wood', 'Metal', 'Concrete', 'Brick', 'Electrical', 'Glass', 'High Value'].map((filter) => (
-            <button 
-              key={filter} 
-              onClick={() => setActiveFilter(filter)}
-              className={`px-6 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${
-                activeFilter === filter 
-                  ? 'bg-stone-900 text-white shadow-lg shadow-stone-900/30 transform scale-105' 
-                  : 'bg-white border border-stone-100 text-stone-500 hover:bg-stone-50 hover:text-stone-900 shadow-sm'
-              }`}
-            >
-              {filter}
-            </button>
-          ))}
-        </div>
-
-        {/* Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
           {!isMarketplace && (
-            <button 
-              onClick={() => setIsScanning(true)}
-              className="bg-white/50 backdrop-blur-sm rounded-3xl border-2 border-dashed border-stone-300 hover:border-orange-500 hover:bg-orange-50/50 flex flex-col items-center justify-center text-center p-6 h-full min-h-[380px] transition-all group cursor-pointer relative overflow-hidden animate-slide-up-fade"
-              style={{ animationDelay: '0ms' }}
-            >
-              <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-xl shadow-stone-200 z-10">
-                 <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
+              <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-12">
+                  <div className="lg:col-span-2 h-full">
+                      <SustainabilityBoard inventory={inventory} cartItems={cartItems} />
+                  </div>
+
+                  <div className="flex flex-col gap-6 h-full">
+                       <div className="bg-stone-900 rounded-3xl p-8 shadow-2xl shadow-stone-900/20 flex flex-col justify-between group hover:shadow-stone-900/40 transition-shadow h-full relative overflow-hidden">
+                           <div className="absolute top-0 right-0 w-32 h-32 bg-white/5 rounded-full blur-3xl -mr-16 -mt-16"></div>
+                           <div>
+                              <div className="flex justify-between items-start mb-4">
+                                  <div className="p-2 bg-stone-800 rounded-xl inline-block">
+                                      <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M4 10h12"/><path d="M4 14h9"/><path d="M19 6a7.7 7.7 0 0 0-5.2-2A7.9 7.9 0 0 0 6 12c0 4.4 3.5 8 7.8 8 2 0 3.8-.8 5.2-2"/></svg>
+                                  </div>
+                                  <span className="text-[10px] font-bold text-stone-500 uppercase tracking-widest bg-stone-800 px-2 py-1 rounded">YTD</span>
+                              </div>
+                              <p className="text-stone-400 text-xs font-bold uppercase tracking-widest mb-1">Total Value Recovered</p>
+                              <h3 className="text-4xl lg:text-5xl font-black text-white tracking-tighter">€{totalRecoveredValue.toLocaleString()}</h3>
+                           </div>
+                           <div className="text-xs font-bold text-emerald-400 mt-6 flex items-center gap-1.5 bg-emerald-500/10 self-start px-3 py-1.5 rounded-full border border-emerald-500/20">
+                               <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round"><polyline points="23 6 13.5 15.5 8.5 10.5 1 18"></polyline><polyline points="17 6 23 6 23 12"></polyline></svg>
+                               +12% from last month
+                           </div>
+                       </div>
+
+                       <div className="grid grid-cols-2 gap-4 flex-1 min-h-[140px]">
+                           <div className="bg-white rounded-3xl p-6 shadow-xl shadow-stone-200/50 flex flex-col justify-center items-center text-center hover:-translate-y-1 transition-transform border border-stone-100">
+                              <p className="text-stone-400 text-[9px] font-black uppercase tracking-widest mb-2">Items Logged</p>
+                              <h3 className="text-4xl font-black text-stone-800">{inventory.filter(i => i.isMine).length}</h3>
+                           </div>
+                           <div className="bg-gradient-to-br from-indigo-50 to-white rounded-3xl p-6 shadow-xl shadow-indigo-100/50 flex flex-col justify-center items-center text-center hover:-translate-y-1 transition-transform border border-indigo-50">
+                              <p className="text-indigo-400 text-[9px] font-black uppercase tracking-widest mb-2">Internal Matches</p>
+                              <h3 className="text-4xl font-black text-indigo-600">{inventory.filter(i => i.isMine && i.internalProjectMatch).length}</h3>
+                           </div>
+                       </div>
+                  </div>
               </div>
-              <h3 className="text-xl font-black text-stone-900 z-10">Add Material</h3>
-              <p className="text-sm text-stone-500 mt-2 max-w-[200px] leading-relaxed z-10 font-medium">
-                Batch scan items to identify, value, and add to inventory
-              </p>
-            </button>
           )}
 
-          {displayItems.length === 0 && (
-             <div className="col-span-full py-20 text-center text-stone-400 animate-fade-in">
-                <div className="mb-6 opacity-30">
-                    <svg className="w-24 h-24 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+          <div className="flex gap-3 overflow-x-auto no-scrollbar pb-4 mb-4 pl-1">
+            {['All', 'Wood', 'Metal', 'Concrete', 'Brick', 'Electrical', 'Glass', 'High Value'].map((filter) => (
+              <button
+                key={filter}
+                onClick={() => setActiveFilter(filter)}
+                className={`px-6 py-3 rounded-2xl text-sm font-bold whitespace-nowrap transition-all duration-300 ${
+                  activeFilter === filter
+                    ? 'bg-stone-900 text-white shadow-lg shadow-stone-900/30 transform scale-105'
+                    : 'bg-white border border-stone-100 text-stone-500 hover:bg-stone-50 hover:text-stone-900 shadow-sm'
+                }`}
+              >
+                {filter}
+              </button>
+            ))}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-8">
+            {!isMarketplace && (
+              <button
+                onClick={() => setIsScanning(true)}
+                className="bg-white/50 backdrop-blur-sm rounded-3xl border-2 border-dashed border-stone-300 hover:border-orange-500 hover:bg-orange-50/50 flex flex-col items-center justify-center text-center p-6 h-full min-h-[380px] transition-all group cursor-pointer relative overflow-hidden animate-slide-up-fade"
+                style={{ animationDelay: '0ms' }}
+              >
+                <div className="w-20 h-20 bg-white rounded-full flex items-center justify-center mb-6 group-hover:scale-110 transition-transform shadow-xl shadow-stone-200 z-10">
+                   <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-orange-600"><path d="M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2z"></path><circle cx="12" cy="13" r="4"></circle></svg>
                 </div>
-                <p className="font-bold text-lg">No items found for this category.</p>
-             </div>
-          )}
+                <h3 className="text-xl font-black text-stone-900 z-10">Add Material</h3>
+                <p className="text-sm text-stone-500 mt-2 max-w-[200px] leading-relaxed z-10 font-medium">
+                  Batch scan items to identify, value, and add to inventory
+                </p>
+              </button>
+            )}
 
-          {displayItems.map((item, index) => (
-            <div key={item.id} className="animate-slide-up-fade" style={{ animationDelay: `${(index + 1) * 75}ms` }}>
-                <InventoryCard 
-                item={item} 
-                isMarketplace={isMarketplace}
-                onClick={(item) => setSelectedItem(item)}
-                />
-            </div>
-          ))}
-        </div>
-      </main>
-      
-      {/* FLOATING CART BAR (Persistent across tabs if items exist) */}
+            {displayItems.length === 0 && (
+               <div className="col-span-full py-20 text-center text-stone-400 animate-fade-in">
+                  <div className="mb-6 opacity-30">
+                      <svg className="w-24 h-24 mx-auto" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="0.5"><path d="M21 16V8a2 2 0 0 0-1-1.73l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.73l7 4a2 2 0 0 0 2 0l7-4A2 2 0 0 0 21 16z"></path></svg>
+                  </div>
+                  <p className="font-bold text-lg">No items found for this category.</p>
+               </div>
+            )}
+
+            {displayItems.map((item, index) => (
+              <div key={item.id} className="animate-slide-up-fade" style={{ animationDelay: `${(index + 1) * 75}ms` }}>
+                  <InventoryCard
+                  item={item}
+                  isMarketplace={isMarketplace}
+                  onClick={(item) => setSelectedItem(item)}
+                  />
+              </div>
+            ))}
+          </div>
+        </main>
+      )}
+
       {cartItems.length > 0 && (
         <div className="fixed bottom-28 left-1/2 -translate-x-1/2 w-[90%] max-w-md bg-stone-900/90 backdrop-blur-xl border border-white/10 p-4 rounded-3xl z-40 shadow-2xl animate-bounce-in flex items-center justify-between pr-4 group hover:bg-stone-900 transition-colors">
              <div className="flex items-center gap-4 pl-2">
@@ -816,7 +892,7 @@ const App: React.FC = () => {
                     <span className="text-white font-black text-xl">€{cartItems.reduce((sum, i) => sum + i.estimatedValue, 0).toLocaleString()}</span>
                 </div>
              </div>
-             <button 
+             <button
                 onClick={() => setIsCartOpen(true)}
                 className="bg-white text-stone-900 font-bold py-3 px-6 rounded-xl shadow-lg flex items-center gap-2 hover:bg-stone-100 transition-colors text-sm"
             >
@@ -826,7 +902,6 @@ const App: React.FC = () => {
         </div>
       )}
 
-      {/* FAB for Chat - Marketplace Tab */}
       {isMarketplace && (
          <button
            onClick={() => setIsChatOpen(true)}
@@ -840,13 +915,11 @@ const App: React.FC = () => {
          </button>
       )}
 
-      {/* Bottom Nav */}
       <NavBar activeTab={activeTab} setActiveTab={handleTabChange} />
 
-      {/* Detail View Overlay */}
       {selectedItem && (
-        <ItemDetails 
-          item={selectedItem} 
+        <ItemDetails
+          item={selectedItem}
           onClose={() => setSelectedItem(null)}
           isMarketplace={activeTab === 'market'}
           onAddToCart={handleAddToCart}
@@ -856,9 +929,8 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Cart Drawer Overlay */}
       {isCartOpen && (
-        <CartDrawer 
+        <CartDrawer
            items={cartItems}
            onRemove={handleRemoveFromCart}
            onCheckout={handleCheckout}
@@ -866,7 +938,6 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Chat Assistant Overlay */}
       {isChatOpen && (
         <ChatAssistant
            inventory={inventory}
@@ -875,9 +946,8 @@ const App: React.FC = () => {
         />
       )}
 
-      {/* Profile Modal */}
       {isProfileOpen && (
-        <ProfileModal 
+        <ProfileModal
             requests={requests}
             onClose={() => setIsProfileOpen(false)}
         />
