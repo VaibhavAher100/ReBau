@@ -74,8 +74,7 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ item, onClose, onAddTo
         
         {/* INTERNAL MATCH BANNER */}
         {!isMarketplace && item.internalProjectMatch && (
-            <div className="bg-white rounded-2xl p-5 mb-8 shadow-xl shadow-indigo-900/10 border border-indigo-50 relative z-20 transform -translate-y-4">
-                <div className="absolute top-0 left-0 w-1.5 h-full bg-indigo-500 rounded-l-2xl"></div>
+            <div className="bg-white rounded-2xl p-5 mb-8 shadow-xl shadow-indigo-900/10 border border-indigo-100 relative z-20 transform -translate-y-4">
                 <div className="flex items-center gap-4 mb-3">
                     <div className="bg-indigo-100 text-indigo-600 p-2.5 rounded-xl">
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path><circle cx="9" cy="7" r="4"></circle><path d="M23 21v-2a4 4 0 0 0-3-3.87"></path><path d="M16 3.13a4 4 0 0 1 0 7.75"></path></svg>
@@ -221,7 +220,7 @@ export const ItemDetails: React.FC<ItemDetailsProps> = ({ item, onClose, onAddTo
                 ) : (
                     <button 
                         onClick={() => onAddToCart && onAddToCart(item)}
-                        className="w-full bg-gradient-to-r from-orange-600 to-orange-700 hover:from-orange-500 hover:to-orange-600 text-white font-bold py-4 rounded-xl shadow-xl shadow-orange-200 active:scale-[0.98] transition-all flex items-center justify-center gap-2"
+                        className="w-full bg-orange-600 hover:bg-orange-700 text-white font-bold py-4 rounded-xl shadow-xl shadow-orange-200 active:scale-[0.98] transition-colors flex items-center justify-center gap-2"
                     >
                         <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="9" cy="21" r="1"></circle><circle cx="20" cy="21" r="1"></circle><path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path></svg>
                         Add to Cart

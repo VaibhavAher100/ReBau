@@ -105,7 +105,7 @@ export const BlueprintMatch: React.FC<BlueprintMatchProps> = ({ marketplaceItems
     <div className="max-w-5xl mx-auto px-6 py-8 animate-fade-in">
       <div className="mb-8">
         <div className="flex items-center gap-2 mb-2">
-          <span className="h-2 w-2 rounded-full bg-indigo-500"></span>
+          <span className="h-2 w-2 rounded-full bg-orange-500"></span>
           <span className="text-xs font-bold uppercase tracking-widest text-stone-400">Smart Sourcing</span>
         </div>
         <h2 className="text-4xl md:text-5xl font-black text-stone-900 tracking-tighter mb-2">Blueprint Match</h2>
@@ -121,13 +121,13 @@ export const BlueprintMatch: React.FC<BlueprintMatchProps> = ({ marketplaceItems
             <div
               onClick={() => fileRef.current?.click()}
               className={`border-2 border-dashed rounded-2xl p-6 flex flex-col items-center justify-center text-center cursor-pointer transition-all min-h-[140px] ${
-                imageBase64 ? 'border-indigo-300 bg-indigo-50' : 'border-stone-200 hover:border-indigo-400 hover:bg-indigo-50/50'
+                imageBase64 ? 'border-orange-300 bg-orange-50' : 'border-stone-200 hover:border-orange-400 hover:bg-orange-50/50'
               }`}
             >
               {imageBase64 ? (
                 <>
                   <img src={imageBase64} alt="Blueprint" className="max-h-20 object-contain mb-2 rounded-lg" />
-                  <span className="text-xs font-bold text-indigo-700">{imageName}</span>
+                  <span className="text-xs font-bold text-orange-700">{imageName}</span>
                   <button
                     onClick={(e) => { e.stopPropagation(); setImageBase64(undefined); setImageName(undefined); }}
                     className="mt-2 text-xs text-stone-400 hover:text-red-500 font-medium"
@@ -153,7 +153,7 @@ export const BlueprintMatch: React.FC<BlueprintMatchProps> = ({ marketplaceItems
               value={bomText}
               onChange={e => setBomText(e.target.value)}
               placeholder={"e.g.\n500 red bricks\n12 timber beams (4m)\n30m copper pipes"}
-              className="w-full h-[140px] p-4 bg-stone-50 border border-stone-200 rounded-2xl text-sm text-stone-800 font-medium resize-none focus:ring-2 focus:ring-indigo-400 focus:border-transparent outline-none placeholder-stone-300"
+              className="w-full h-[140px] p-4 bg-stone-50 border border-stone-200 rounded-2xl text-sm text-stone-800 font-medium resize-none focus:ring-2 focus:ring-orange-400 focus:border-transparent outline-none placeholder-stone-300"
             />
           </div>
         </div>
@@ -189,7 +189,7 @@ export const BlueprintMatch: React.FC<BlueprintMatchProps> = ({ marketplaceItems
       {rows.length > 0 && (
         <>
           {/* Summary Banner */}
-          <div className="bg-gradient-to-br from-emerald-900 to-stone-900 rounded-3xl p-6 mb-6 text-white flex flex-col md:flex-row gap-4 md:items-center justify-between">
+          <div className="bg-stone-900 rounded-3xl p-6 mb-6 text-white flex flex-col md:flex-row gap-4 md:items-center justify-between">
             <div className="flex gap-6">
               <div className="text-center">
                 <div className="text-3xl font-black">{matchCount}/{rows.length}</div>

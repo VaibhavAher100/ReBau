@@ -323,12 +323,12 @@ const SustainabilityBoard = ({ inventory, cartItems }: { inventory: MaterialItem
 
                 <div className="grid grid-cols-3 gap-2 md:gap-3">
                     <div className="bg-black/30 backdrop-blur-md rounded-2xl p-3 md:p-4 border border-white/5 text-center hover:bg-black/40 transition-colors">
-                        <div className="text-xl md:text-3xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-b from-white to-stone-400"><AnimatedCounter value={co2Saved} suffix="kg" /></div>
+                        <div className="text-xl md:text-3xl font-black mb-1 text-white"><AnimatedCounter value={co2Saved} suffix="kg" /></div>
                         <div className="text-[9px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest break-words leading-tight">CO2 Avoided</div>
                     </div>
 
                     <div className="bg-black/30 backdrop-blur-md rounded-2xl p-3 md:p-4 border border-white/5 text-center hover:bg-black/40 transition-colors">
-                        <div className="text-xl md:text-3xl font-black mb-1 bg-clip-text text-transparent bg-gradient-to-b from-white to-stone-400"><AnimatedCounter value={wasteDiverted} suffix="kg" /></div>
+                        <div className="text-xl md:text-3xl font-black mb-1 text-white"><AnimatedCounter value={wasteDiverted} suffix="kg" /></div>
                         <div className="text-[9px] md:text-[10px] text-stone-400 uppercase font-bold tracking-widest break-words leading-tight">Waste Diverted</div>
                     </div>
 
@@ -663,7 +663,7 @@ const App: React.FC = () => {
 
         <div className="px-6 py-4 flex justify-between items-center max-w-7xl mx-auto w-full">
             <div className="flex items-center gap-4">
-              <svg width="140" height="45" viewBox="0 0 140 45" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm hover:scale-105 transition-transform duration-300">
+              <svg width="140" height="45" viewBox="0 0 140 45" fill="none" xmlns="http://www.w3.org/2000/svg" className="drop-shadow-sm">
                 <defs>
                     <pattern id="brick-pattern" x="0" y="0" width="10" height="6" patternUnits="userSpaceOnUse">
                         <rect width="10" height="6" fill="#fdba74"/>
