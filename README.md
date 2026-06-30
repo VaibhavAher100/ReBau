@@ -77,6 +77,3 @@ Or scan the QR to land on the demo:
 
 Powered by AI Innovation at FAU Erlangen-Nürnberg. Built on top of [BauBay](https://github.com/HaarisIqubal/BauBay). Material photos via Unsplash. FAU logo via Wikimedia Commons.
 
-## License
-
-[MIT](./LICENSE)
